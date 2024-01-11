@@ -27,8 +27,8 @@
   },
   "rope_theta": 1000000,
   "tie_word_embeddings": false,
-  "torch_dtype": "bfloat16",
-  "transformers_version": "4.36.2",
+  "torch_dtype": "float16",
+  "transformers_version": "4.33.2",
   "use_cache": true,
   "vocab_size": 92544
 }

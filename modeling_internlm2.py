@@ -133,7 +133,7 @@ class InternLM2RotaryEmbedding(nn.Module):
     def forward(self, x, seq_len=None):
         # x: [bs, num_attention_heads, seq_len, head_size]
         if seq_len > self.max_seq_len_cached:
-            self._set_cos_sin_cache(seq_len=seq_len, device=x.device, dtype=x.dtype)
+            self._set_cos_sin_cache(seq_len=seq_len, device=x.device, dtype=torch.float32)
 
         return (
             self.cos_cached[:seq_len].to(dtype=x.dtype),
@@ -196,20 +196,10 @@ def rotate_half(x):
 
 
 def apply_rotary_pos_emb(q, k, cos, sin, position_ids):
-    # The first two dimensions of cos and sin are always 1, so we can `squeeze` them.
-    cos = cos.squeeze(1).squeeze(0)  # [seq_len, dim]
-    sin = sin.squeeze(1).squeeze(0)  # [seq_len, dim]
-    cos = cos.unsqueeze(0).unsqueeze(0).expand(len(position_ids), -1, -1, -1)
-    sin = sin.unsqueeze(0).unsqueeze(0).expand(len(position_ids), -1, -1, -1)
-    if q.size(2) == 1:
-        q_embed = (q * cos[:, :, -1, :]) + (rotate_half(q) * sin[:, :, -1, :])
-    else:
-        q_embed = (q * cos) + (rotate_half(q) * sin)
-
-    if k.size(2) == 1:
-        k_embed = (k * cos[:, :, -1, :]) + (rotate_half(k) * sin[:, :, -1, :])
-    else:
-        k_embed = (k * cos) + (rotate_half(k) * sin)
+    cos = cos[position_ids].unsqueeze(1)
+    sin = sin[position_ids].unsqueeze(1)
+    q_embed = (q * cos) + (rotate_half(q) * sin)
+    k_embed = (k * cos) + (rotate_half(k) * sin)
 
     return q_embed, k_embed
 
@@ -289,8 +279,15 @@ class InternLM2Attention(nn.Module):
                     base=self.config.rope_theta,
                     scaling_factor=scaling_factor
                 )
+            elif scaling_type == "linear":
+                self.rotary_emb = InternLM2LinearScalingRotaryEmbedding(
+                    self.head_dim,
+                    max_position_embeddings=self.max_position_embeddings,
+                    base=self.config.rope_theta,
+                    scaling_factor=scaling_factor
+                )
             else:
-                raise ValueError("Currently we only support rotary embedding's type being 'dynamic'.")
+                raise ValueError("Currently we only support rotary embedding's type being 'dynamic' or 'linear'.")
         return self.rotary_emb
 
     def _shape(self, tensor: torch.Tensor, seq_len: int, bsz: int):
@@ -1032,7 +1029,6 @@ class InternLM2ForCausalLM(InternLM2PreTrainedModel):
         for record in history:
             prompt += f"""[UNUSED_TOKEN_146]user\n{record[0]}[UNUSED_TOKEN_145]\n[UNUSED_TOKEN_146]assistant\n{record[1]}[UNUSED_TOKEN_145]\n"""
         prompt += f"""[UNUSED_TOKEN_146]user\n{query}[UNUSED_TOKEN_145]\n[UNUSED_TOKEN_146]assistant\n"""
-        print(prompt)
         return tokenizer([prompt], return_tensors="pt")
 
     @torch.no_grad()
@@ -1268,5 +1264,5 @@ class InternLM2ForSequenceClassification(InternLM2PreTrainedModel):
             logits=pooled_logits,
             past_key_values=transformer_outputs.past_key_values,
             hidden_states=transformer_outputs.hidden_states,
-            attentions=transformer_outputs,
+            attentions=transformer_outputs.attentions,
         )
