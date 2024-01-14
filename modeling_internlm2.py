@@ -1049,6 +1049,8 @@ class InternLM2ForCausalLM(InternLM2PreTrainedModel):
     ):
         inputs = self.build_inputs(tokenizer, query, history, meta_instruction)
         inputs = {k: v.to(self.device) for k, v in inputs.items() if torch.is_tensor(v)}
+        # also add end-of-assistant token in eos token id to avoid unnecessary generation
+        eos_token_id = [tokenizer.eos_token_id, tokenizer.convert_tokens_to_ids(["[UNUSED_TOKEN_145]"])[0]]
         outputs = self.generate(
             **inputs,
             streamer=streamer,
@@ -1056,6 +1058,7 @@ class InternLM2ForCausalLM(InternLM2PreTrainedModel):
             do_sample=do_sample,
             temperature=temperature,
             top_p=top_p,
+            eos_token_id=eos_token_id,
             **kwargs,
         )
         outputs = outputs[0].cpu().tolist()[len(inputs["input_ids"][0]) :]
