@@ -51,6 +51,19 @@ logger = logging.get_logger(__name__)
 
 _CONFIG_FOR_DOC = "InternLM2Config"
 
+flash_attn_func, flash_attn_varlen_func = None, None
+pad_input, index_first_axis, unpad_input = None, None, None
+def _import_flash_attn():
+    global flash_attn_func, flash_attn_varlen_func
+    global pad_input, index_first_axis, unpad_input
+    try:
+        from flash_attn import flash_attn_func as _flash_attn_func, flash_attn_varlen_func as _flash_attn_varlen_func
+        from flash_attn.bert_padding import pad_input as _pad_input, index_first_axis as _index_first_axis, unpad_input as _unpad_input
+        flash_attn_func, flash_attn_varlen_func = _flash_attn_func, _flash_attn_varlen_func
+        pad_input, index_first_axis, unpad_input = _pad_input, _index_first_axis, _unpad_input
+    except ImportError:
+        raise ImportError("flash_attn is not installed.")
+
 # Copied from transformers.models.llama.modeling_llama._get_unpad_data
 def _get_unpad_data(attention_mask):
     seqlens_in_batch = attention_mask.sum(dim=-1, dtype=torch.int32)
@@ -502,13 +515,11 @@ class InternLM2FlashAttention2(InternLM2Attention):
             softmax_scale (`float`, *optional*):
                 The scaling of QK^T before applying softmax. Default to 1 / sqrt(head_dim)
         """
-        from flash_attn import flash_attn_func, flash_attn_varlen_func
-        from flash_attn.bert_padding import pad_input
         # Contains at least one padding token in the sequence
         causal = self.is_causal and query_length != 1
         if attention_mask is not None:
             batch_size = query_states.shape[0]
-            query_states, key_states, value_states, indices_q, cu_seq_lens, max_seq_lens = self._upad_input(
+            query_states, key_states, value_states, indices_q, cu_seq_lens, max_seq_lens = self._unpad_input(
                 query_states, key_states, value_states, attention_mask, query_length
             )
 
@@ -536,8 +547,7 @@ class InternLM2FlashAttention2(InternLM2Attention):
 
         return attn_output
 
-    def _upad_input(self, query_layer, key_layer, value_layer, attention_mask, query_length):
-        from flash_attn.bert_padding import index_first_axis, unpad_input
+    def _unpad_input(self, query_layer, key_layer, value_layer, attention_mask, query_length):
         indices_k, cu_seqlens_k, max_seqlen_in_batch_k = _get_unpad_data(attention_mask)
         batch_size, kv_seq_len, num_key_value_heads, head_dim = key_layer.shape
 
@@ -841,6 +851,9 @@ class InternLM2Model(InternLM2PreTrainedModel):
         use_cache = use_cache if use_cache is not None else self.config.use_cache
 
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+
+        if self.config.attn_implementation == "flash_attention_2":
+            _import_flash_attn()
 
         # retrieve input_ids and inputs_embeds
         if input_ids is not None and inputs_embeds is not None:
