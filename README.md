@@ -83,7 +83,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 model_path = "internlm/internlm2-chat-7b"
-model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16, trust_remote_code=True)
+model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16, trust_remote_code=True).cuda()
 tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
 
 model = model.eval()
@@ -152,7 +152,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 model_path = "internlm/internlm2-chat-7b"
-model = AutoModelForCausalLM.from_pretrained(model_path, torch_dype=torch.float16, trust_remote_code=True)
+model = AutoModelForCausalLM.from_pretrained(model_path, torch_dype=torch.float16, trust_remote_code=True).cuda()
 tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
 
 model = model.eval()
