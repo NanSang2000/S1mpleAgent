@@ -60,7 +60,7 @@ We conducted a comprehensive evaluation of InternLM using the open-source evalua
 
 ### Import from Transformers
 
-To load the InternLM 7B Chat model using Transformers, use the following code:
+To load the InternLM2 7B Chat model using Transformers, use the following code:
 
 ```python
 import torch
@@ -128,7 +128,9 @@ InternLM2 ，即书生·浦语大模型第二代，开源了面向实用场景�
 **局限性：** 尽管在训练过程中我们非常注重模型的安全性，尽力促使模型输出符合伦理和法律要求的文本，但受限于模型大小以及概率生成范式，模型可能会产生各种不符合预期的输出，例如回复内容包含偏见、歧视等有害内容，请勿传播这些内容。由于传播不良信息导致的任何后果，本项目不承担责任。
 
 ### 通过 Transformers 加载
-通过以下的代码加载 InternLM 7B Chat 模型
+
+通过以下的代码加载 InternLM2 7B Chat 模型
+
 ```python
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
