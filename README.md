@@ -1,5 +1,6 @@
 ---
 pipeline_tag: text-generation
+license: other
 ---
 # InternLM 
 
