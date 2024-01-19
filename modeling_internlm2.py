@@ -480,10 +480,8 @@ class InternLM2FlashAttention2(InternLM2Attention):
         key_states = key_states.transpose(1, 2)
         value_states = value_states.transpose(1, 2)
 
-        dropout_rate = 0.0 if not self.training else self.attention_dropout
-
         attn_output = self._flash_attention_forward(
-            query_states, key_states, value_states, attention_mask, q_len, dropout=dropout_rate
+            query_states, key_states, value_states, attention_mask, q_len
         )
         attn_output = attn_output.reshape(bsz, q_len, self.hidden_size).contiguous()
         attn_output = self.wo(attn_output)
