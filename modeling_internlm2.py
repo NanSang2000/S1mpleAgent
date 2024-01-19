@@ -1138,12 +1138,12 @@ class InternLM2ForCausalLM(InternLM2PreTrainedModel):
     def build_inputs(self, tokenizer, query: str, history: List[Tuple[str, str]] = [], meta_instruction=""):
         prompt = ""
         if meta_instruction:
-            prompt += f"""<s>[UNUSED_TOKEN_146]system\n{meta_instruction}[UNUSED_TOKEN_145]\n"""
+            prompt += f"""<s><|im_start|>system\n{meta_instruction}<|im_end|>\n"""
         else:
             prompt += "<s>"
         for record in history:
-            prompt += f"""[UNUSED_TOKEN_146]user\n{record[0]}[UNUSED_TOKEN_145]\n[UNUSED_TOKEN_146]assistant\n{record[1]}[UNUSED_TOKEN_145]\n"""
-        prompt += f"""[UNUSED_TOKEN_146]user\n{query}[UNUSED_TOKEN_145]\n[UNUSED_TOKEN_146]assistant\n"""
+            prompt += f"""<|im_start|>user\n{record[0]}<|im_end|>\n<|im_start|>assistant\n{record[1]}<|im_end|>\n"""
+        prompt += f"""<|im_start|>user\n{query}<|im_end|>\n<|im_start|>assistant\n"""
         return tokenizer([prompt], return_tensors="pt")
 
     @torch.no_grad()
@@ -1165,7 +1165,7 @@ class InternLM2ForCausalLM(InternLM2PreTrainedModel):
         inputs = self.build_inputs(tokenizer, query, history, meta_instruction)
         inputs = {k: v.to(self.device) for k, v in inputs.items() if torch.is_tensor(v)}
         # also add end-of-assistant token in eos token id to avoid unnecessary generation
-        eos_token_id = [tokenizer.eos_token_id, tokenizer.convert_tokens_to_ids(["[UNUSED_TOKEN_145]"])[0]]
+        eos_token_id = [tokenizer.eos_token_id, tokenizer.convert_tokens_to_ids(["<|im_end|>"])[0]]
         outputs = self.generate(
             **inputs,
             streamer=streamer,
@@ -1178,7 +1178,7 @@ class InternLM2ForCausalLM(InternLM2PreTrainedModel):
         )
         outputs = outputs[0].cpu().tolist()[len(inputs["input_ids"][0]) :]
         response = tokenizer.decode(outputs, skip_special_tokens=True)
-        response = response.split("[UNUSED_TOKEN_145]")[0]
+        response = response.split("<|im_end|>")[0]
         history = history + [(query, response)]
         return response, history
 
@@ -1231,7 +1231,7 @@ class InternLM2ForCausalLM(InternLM2PreTrainedModel):
                     return
 
                 token = self.tokenizer.decode([value[-1]], skip_special_tokens=True)
-                if token.strip() != "[UNUSED_TOKEN_145]":
+                if token.strip() != "<|im_end|>":
                     self.response = self.response + token
                     history = self.history + [(self.query, self.response)]
                     self.queue.put((self.response, history))
