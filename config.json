@@ -22,7 +22,7 @@
   "pad_token_id": 2,
   "rms_norm_eps": 1e-05,
   "rope_scaling": {
-    "factor": 1.0,
+    "factor": 2.0,
     "type": "dynamic"
   },
   "rope_theta": 1000000,
