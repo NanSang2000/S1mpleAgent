@@ -45,7 +45,7 @@ try:
 except:  # noqa # pylint: disable=bare-except
     BaseStreamer = None
 
-from .configuration_internlm import InternLMConfig as InternLM2Config
+from .configuration_internlm2 import InternLM2Config
 
 logger = logging.get_logger(__name__)
 
@@ -1134,11 +1134,12 @@ class InternLM2ForCausalLM(InternLM2PreTrainedModel):
         return reordered_past
 
     def build_inputs(self, tokenizer, query: str, history: List[Tuple[str, str]] = [], meta_instruction=""):
-        prompt = ""
-        if meta_instruction:
-            prompt += f"""<s><|im_start|>system\n{meta_instruction}<|im_end|>\n"""
+        if tokenizer.add_bos_token:
+            prompt = ""
         else:
-            prompt += "<s>"
+            prompt = tokenizer.bos_token
+        if meta_instruction:
+            prompt += f"""<|im_start|>system\n{meta_instruction}<|im_end|>\n"""
         for record in history:
             prompt += f"""<|im_start|>user\n{record[0]}<|im_end|>\n<|im_start|>assistant\n{record[1]}<|im_end|>\n"""
         prompt += f"""<|im_start|>user\n{query}<|im_end|>\n<|im_start|>assistant\n"""
@@ -1214,6 +1215,7 @@ class InternLM2ForCausalLM(InternLM2PreTrainedModel):
                 self.query = query
                 self.history = history
                 self.response = ""
+                self.chat = []
                 self.received_inputs = False
                 self.queue.put((self.response, history + [(self.query, self.response)]))
 
@@ -1228,11 +1230,15 @@ class InternLM2ForCausalLM(InternLM2PreTrainedModel):
                     self.received_inputs = True
                     return
 
-                token = self.tokenizer.decode([value[-1]], skip_special_tokens=True)
+                self.cache.extend(value.tolist())
+                token = self.tokenizer.decode(self.cache, skip_special_tokens=True)
                 if token.strip() != "<|im_end|>":
                     self.response = self.response + token
                     history = self.history + [(self.query, self.response)]
                     self.queue.put((self.response, history))
+                    self.cache = []
+                else:
+                    self.end()
 
             def end(self):
                 self.queue.put(None)
