@@ -86,5 +86,13 @@
       "special": true
     }
   },
+  "additional_special_tokens": [
+    "<|im_start|>",
+    "<|im_end|>",
+    "<|action_start|>",
+    "<|action_end|>",
+    "<|interpreter|>",
+    "<|plugin|>"
+  ],
   "chat_template": "{{ bos_token }}{% for message in messages %}{{'<|im_start|>' + message['role'] + '\n' + message['content'] + '<|im_end|>' + '\n'}}{% endfor %}{% if add_generation_prompt %}{{ '<|im_start|>assistant\n' }}{% endif %}"
 }

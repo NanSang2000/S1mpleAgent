@@ -1,4 +1,12 @@
 {
+  "additional_special_tokens": [
+    "<|im_start|>",
+    "<|im_end|>",
+    "<|action_start|>",
+    "<|action_end|>",
+    "<|interpreter|>",
+    "<|plugin|>"
+  ],
   "bos_token": "<s>",
   "eos_token": "</s>",
   "pad_token": "</s>",
