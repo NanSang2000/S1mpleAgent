@@ -43,3 +43,11 @@ pytorch_model-00001-of-00008.bin filter=lfs diff=lfs merge=lfs -text
 pytorch_model-00002-of-00008.bin filter=lfs diff=lfs merge=lfs -text
 pytorch_model-00005-of-00008.bin filter=lfs diff=lfs merge=lfs -text
 pytorch_model.bin.index.json filter=lfs diff=lfs merge=lfs -text
+model-00001-of-00008.safetensors filter=lfs diff=lfs merge=lfs -text
+model-00002-of-00008.safetensors filter=lfs diff=lfs merge=lfs -text
+model-00003-of-00008.safetensors filter=lfs diff=lfs merge=lfs -text
+model-00004-of-00008.safetensors filter=lfs diff=lfs merge=lfs -text
+model-00005-of-00008.safetensors filter=lfs diff=lfs merge=lfs -text
+model-00006-of-00008.safetensors filter=lfs diff=lfs merge=lfs -text
+model-00007-of-00008.safetensors filter=lfs diff=lfs merge=lfs -text
+model-00008-of-00008.safetensors filter=lfs diff=lfs merge=lfs -text
